@@ -3,7 +3,7 @@ services:
     name: life-calendar-bot
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python -c "import telegram, matplotlib, PIL; print('✅ All dependencies installed successfully')"
     startCommand: python render_start.py
     envVars:
       - key: BOT_TOKEN
