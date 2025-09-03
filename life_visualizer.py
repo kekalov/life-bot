@@ -103,35 +103,35 @@ class LifeVisualizer:
         weeks_remaining = total_weeks - weeks_lived
         life_percentage = (weeks_lived / total_weeks) * 100
         
-        # Создаем красивую статистику
+        # Создаем красивую статистику (сдвигаем выше, чтобы не перекрывать ось X)
         stats_text = f"LIFE STATISTICS\n"
         stats_text += f"Current Age: {current_age} years, {current_week_in_year} weeks\n"
         stats_text += f"Weeks Lived: {weeks_lived:,}\n"
         stats_text += f"Weeks Remaining: {weeks_remaining:,}\n"
         stats_text += f"Life Progress: {life_percentage:.1f}%"
         
-        ax.text(self.grid_columns / 2, -3, stats_text, 
+        ax.text(self.grid_columns / 2, -2, stats_text, 
                 ha='center', va='center', 
                 fontsize=11, color=TEXT_COLOR, fontweight='normal',
                 bbox=dict(boxstyle="round,pad=0.5", facecolor='#f8f9fa', edgecolor='#dee2e6', alpha=0.8))
         
-        # Добавляем легенду
+        # Добавляем легенду (сдвигаем выше)
         legend_text = "Red squares = Weeks lived\nWhite squares = Weeks remaining"
-        ax.text(self.grid_columns / 2, -6, legend_text, 
+        ax.text(self.grid_columns / 2, -4, legend_text, 
                 ha='center', va='center', 
                 fontsize=10, color=TEXT_COLOR, fontweight='normal',
                 bbox=dict(boxstyle="round,pad=0.5", facecolor='#e9ecef', edgecolor='#ced4da', alpha=0.8))
         
         # Добавляем подпись бота
-        ax.text(self.grid_columns / 2, -9, 
-                "Get this visualization every week: @your_bot_username", 
+        ax.text(self.grid_columns / 2, -6, 
+                "Get this visualization every week: @lifetime_bot", 
                 ha='center', va='center', 
                 fontsize=9, color=TEXT_COLOR, style='italic',
                 bbox=dict(boxstyle="round,pad=0.3", facecolor='#f1f3f4', edgecolor='#dadce0', alpha=0.8))
         
         # Добавляем дату создания
         creation_date = date.today().strftime("%B %d, %Y")
-        ax.text(self.grid_columns / 2, -11, 
+        ax.text(self.grid_columns / 2, -8, 
                 f"Generated on {creation_date}", 
                 ha='center', va='center', 
                 fontsize=8, color='#6c757d', style='italic')
