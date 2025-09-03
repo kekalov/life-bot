@@ -1,4 +1,4 @@
-# 🚀 Deploy Life Calendar Bot on Render
+# 🚀 Deploy Life Calendar Bot on Render (Background Worker)
 
 ## 📋 Prerequisites
 
@@ -11,7 +11,7 @@
 ### 1. Connect GitHub Repository
 
 1. Go to [render.com](https://render.com) and sign in
-2. Click **"New +"** → **"Web Service"**
+2. Click **"New +"** → **"Background Worker"**
 3. Connect your GitHub account
 4. Select the `life-bot` repository
 
@@ -106,16 +106,32 @@ To update your bot:
 ## 💰 Costs
 
 - **Free Tier**: 750 hours/month
-- **Bot runs continuously** (24/7)
+- **Bot runs continuously** (24/7) as background worker
+- **No web interface needed** - perfect for Telegram bots
 - **Upgrade** if you need more hours
 
 ## 🎯 Success Indicators
 
 ✅ **Build completes** without errors  
-✅ **Service starts** successfully  
+✅ **Worker starts** successfully  
 ✅ **Bot responds** to commands  
 ✅ **Logs show** normal operation  
-✅ **No errors** in Render dashboard  
+✅ **No errors** in Render dashboard
+
+## 🚀 Why Background Worker?
+
+### ✅ **Perfect for Telegram Bots:**
+- **No web interface** - bot runs in background
+- **Continuous operation** - 24/7 availability
+- **Resource efficient** - only runs when needed
+- **Auto-restart** - recovers from errors automatically
+
+### 🔄 **How it Works:**
+1. **Background Worker** starts your bot
+2. **Bot connects** to Telegram API
+3. **Listens for messages** continuously
+4. **Processes commands** and sends responses
+5. **Runs indefinitely** until stopped  
 
 ## 🆘 Support
 
