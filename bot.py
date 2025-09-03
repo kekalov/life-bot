@@ -1,9 +1,11 @@
 import logging
 import os
+import asyncio
 from datetime import datetime, date
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from life_visualizer import LifeVisualizer
+from scheduler import WeeklyReportScheduler
 from config import BOT_TOKEN
 
 # Настройка логирования
@@ -21,6 +23,8 @@ user_genders = {}
 class LifeBot:
     def __init__(self):
         self.visualizer = LifeVisualizer()
+        self.scheduler = None
+        self.channel_id = None  # Will be set via command
         
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Обработчик команды /start"""
@@ -37,10 +41,15 @@ class LifeBot:
 /show - показать ваш календарь жизни
 /week - показать информацию о текущей неделе
 /percentage - показать процент прожитой жизни
+
+🕐 **Автоматические отчеты:**
+/setchannel <ID> - установить канал для еженедельных отчетов
+/schedulestatus - показать статус планировщика
 /help - показать справку
 
 Пример: /setbirth 15.03.1990
 Пример: /setgender male
+Пример: /setchannel -1001234567890
         """
         await update.message.reply_text(welcome_text)
     
@@ -319,6 +328,10 @@ class LifeBot:
 /show - показать календарь жизни
 /week - показать статистику по неделям
 /percentage - показать процент прожитой жизни
+
+🕐 **Автоматические отчеты:**
+/setchannel <ID> - установить канал для еженедельных отчетов
+/schedulestatus - показать статус планировщика
 /help - показать эту справку
 
 📅 Формат даты:
@@ -348,6 +361,98 @@ class LifeBot:
             "🤖 Я понимаю только команды!\n"
             "Используйте /start для начала работы или /help для справки."
         )
+    
+    async def set_channel(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Установка канала для еженедельных отчетов"""
+        user_id = update.effective_user.id
+        
+        if not context.args:
+            await update.message.reply_text(
+                "❌ Пожалуйста, укажите ID канала!\n"
+                "Формат: /setchannel <ID_канала>\n"
+                "Пример: /setchannel -1001234567890\n\n"
+                "💡 Как получить ID канала:\n"
+                "1. Добавьте @userinfobot в ваш канал\n"
+                "2. Скопируйте ID (начинается с -100)"
+            )
+            return
+        
+        try:
+            channel_id = context.args[0]
+            
+            # Проверяем формат ID канала (должен начинаться с -100)
+            if not channel_id.startswith('-100'):
+                await update.message.reply_text(
+                    "❌ Неверный формат ID канала!\n"
+                    "ID канала должен начинаться с -100\n"
+                    "Пример: -1001234567890"
+                )
+                return
+            
+            # Сохраняем ID канала
+            self.channel_id = channel_id
+            
+            # Инициализируем планировщик если еще не создан
+            if not self.scheduler:
+                self.scheduler = WeeklyReportScheduler(BOT_TOKEN, channel_id)
+                self.scheduler.start_scheduler()
+                await update.message.reply_text(
+                    f"✅ Канал установлен: {channel_id}\n"
+                    f"🕐 Планировщик запущен!\n"
+                    f"📅 Отчеты будут отправляться каждый понедельник в 00:00 по португальскому времени\n"
+                    f"🌍 Время: Europe/Lisbon (Португалия)"
+                )
+            else:
+                # Обновляем существующий планировщик
+                self.scheduler.channel_id = channel_id
+                await update.message.reply_text(
+                    f"✅ Канал обновлен: {channel_id}\n"
+                    f"🕐 Планировщик продолжает работать\n"
+                    f"📅 Следующий отчет: каждый понедельник в 00:00 (Португалия)"
+                )
+                
+        except Exception as e:
+            logger.error(f"Ошибка при установке канала: {e}")
+            await update.message.reply_text("❌ Произошла ошибка при установке канала")
+    
+    async def scheduler_status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Показать статус планировщика"""
+        if not self.scheduler:
+            await update.message.reply_text(
+                "🕐 **Статус планировщика:**\n\n"
+                "❌ Планировщик не запущен\n"
+                "💡 Используйте /setchannel для настройки автоматических отчетов"
+            )
+            return
+        
+        try:
+            status = self.scheduler.get_scheduler_status()
+            
+            if 'error' in status:
+                await update.message.reply_text(f"❌ Ошибка получения статуса: {status['error']}")
+                return
+            
+            next_run = status['next_run']
+            next_run_str = next_run.strftime('%A, %d %B %Y at %H:%M') if next_run else "Не определено"
+            
+            message = f"""🕐 **Статус планировщика:**
+
+✅ **Состояние:** {'Работает' if status['running'] else 'Остановлен'}
+📅 **Расписание:** {status['schedule']}
+🌍 **Часовой пояс:** {status['timezone']}
+📊 **Задач:** {status['job_count']}
+⏰ **Следующий запуск:** {next_run_str}
+
+💡 **Автоматические отчеты:**
+• Отправляются каждый понедельник в 00:00
+• Время: Португалия (Europe/Lisbon)
+• Канал: {self.channel_id or 'Не установлен'}"""
+            
+            await update.message.reply_text(message)
+            
+        except Exception as e:
+            logger.error(f"Ошибка при получении статуса планировщика: {e}")
+            await update.message.reply_text("❌ Произошла ошибка при получении статуса")
 
 def main():
     """Главная функция"""
@@ -369,6 +474,8 @@ def main():
     application.add_handler(CommandHandler("show", bot.show_calendar))
     application.add_handler(CommandHandler("week", bot.week_info))
     application.add_handler(CommandHandler("percentage", bot.show_percentage))
+    application.add_handler(CommandHandler("setchannel", bot.set_channel))
+    application.add_handler(CommandHandler("schedulestatus", bot.scheduler_status))
     application.add_handler(CommandHandler("help", bot.help_command))
     
     # Обработчик обычных сообщений
